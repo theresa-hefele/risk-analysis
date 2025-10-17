@@ -14,6 +14,8 @@ However, you’re free to use any programming language or environment you prefer
 
 > 💡 **Note:** To use Colab, you need a **Google account**.  
 > If you don’t have one, we recommend installing **[Anaconda](https://www.anaconda.com/download)** — it includes everything you need to start with Python and run notebooks locally.  
+> After the Anaconda installation you can either just download the whole repository. However, we will update this every week. If you want to avoid downloading the whole thing all the time you can use [git](git_for_anaconda.md). 
+> To open the notebooks use jupyter in Anaconda.
 > 🗨️ Need help? Reach out in the *Moodle forum*.
 
 
@@ -38,3 +40,6 @@ However, you’re free to use any programming language or environment you prefer
 3. Follow the step-by-step instructions inside the notebook.  
 
 ### [**<img src="https://colab.research.google.com/img/colab_favicon_256px.png" alt="Colab Logo" width="28" style="vertical-align: middle;"/> Week 1: Introduction to Data Analysis in Python**](https://colab.research.google.com/github/theresa-hefele/risk-analysis/blob/main/week1/week1_intro2python.ipynb)
+
+You find the solutions up to the point we reached in class as well as additional information we felt were a bit confusing:
+### [**<img src="https://colab.research.google.com/img/colab_favicon_256px.png" alt="Colab Logo" width="28" style="vertical-align: middle;"/> Week 1: Solution: Introduction to Data Analysis in Python**](https://colab.research.google.com/github/theresa-hefele/risk-analysis/blob/main/week1/week1_intro2python_solution.ipynb)
