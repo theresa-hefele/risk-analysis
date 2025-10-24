@@ -41,5 +41,5 @@ However, you’re free to use any programming language or environment you prefer
 
 ### [**<img src="https://colab.research.google.com/img/colab_favicon_256px.png" alt="Colab Logo" width="28" style="vertical-align: middle;"/> Week 1: Introduction to Data Analysis in Python**](https://colab.research.google.com/github/theresa-hefele/risk-analysis/blob/main/week1/week1_intro2python.ipynb)
 
-You find the solutions up to the point we reached in class as well as additional information we felt were a bit confusing:
-### [**<img src="https://colab.research.google.com/img/colab_favicon_256px.png" alt="Colab Logo" width="28" style="vertical-align: middle;"/> Week 1: Solution: Introduction to Data Analysis in Python**](https://colab.research.google.com/github/theresa-hefele/risk-analysis/blob/main/week1/week1_intro2python_solution.ipynb)
+You find the solutions as well as additional information we felt were a bit confusing:
+### [**<img src="https://colab.research.google.com/img/colab_favicon_256px.png" alt="Colab Logo" width="28" style="vertical-align: middle;"/> Week 1: Introduction to Data Analysis in Python (Solution)**](https://colab.research.google.com/github/theresa-hefele/risk-analysis/blob/main/week1/week1_intro2python_solution.ipynb)
