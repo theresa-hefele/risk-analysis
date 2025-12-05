@@ -50,6 +50,9 @@ You find the solutions as well as additional information we felt were a bit conf
 
 ### [**<img src="https://colab.research.google.com/img/colab_favicon_256px.png" alt="Colab Logo" width="28" style="vertical-align: middle;"/> Week 5: Bernoulli Process (Solution)**](https://colab.research.google.com/github/theresa-hefele/risk-analysis/blob/main/week5/week5_bernoulli.ipynb)
 
-### **Week 6: Extreme Value Distributions (Python Notebook)**  
-Tutorial materials for Week 6 can be found here:  
-https://github.com/theresa-hefele/risk-analysis/tree/main/Tutorial%206
+### **Week 6: Extreme Value Distributions (Solution)**
+
+The Python notebook `Problems_Python.ipynb` contains the code used in Tutorial 6 for the Extreme Value Distributions lecture.
+
+You can find the materials here:  
+[**Tutorial 6**](https://github.com/theresa-hefele/risk-analysis/tree/main/Tutorial%206)
