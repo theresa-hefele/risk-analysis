@@ -56,7 +56,7 @@ You find the solutions as well as additional information we felt were a bit conf
 
 ### [**<img src="https://colab.research.google.com/img/colab_favicon_256px.png" alt="Colab Logo" width="28" style="vertical-align: middle;"/> Week 8:  Normal, Log-normal and Multi-normal distributions (Solution)**](https://colab.research.google.com/github/theresa-hefele/risk-analysis/blob/main/week8/Tutorial-8.ipynb)
 
-### [**<img src="https://colab.research.google.com/img/colab_favicon_256px.png" alt="Colab Logo" width="28" style="vertical-align: middle;"/> Week 9:  Uncertainty Propagation **](https://colab.research.google.com/github/theresa-hefele/risk-analysis/blob/main/week9/T9_Class_Code_Activity.ipynb)
+### [**<img src="https://colab.research.google.com/img/colab_favicon_256px.png" alt="Colab Logo" width="28" style="vertical-align: middle;"/> Week 9:  Uncertainty Propagation**](https://colab.research.google.com/github/theresa-hefele/risk-analysis/blob/main/week9/T9_Class_Code_Activity.ipynb)
 
 
 
