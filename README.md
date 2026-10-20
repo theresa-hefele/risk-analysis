@@ -44,7 +44,7 @@ However, you’re free to use any programming language or environment you prefer
 ### [**<img src="https://colab.research.google.com/img/colab_favicon_256px.png" alt="Colab Logo" width="28" style="vertical-align: middle;"/> Week 1: Introduction to Data Analysis**](https://colab.research.google.com/github/theresa-hefele/risk-analysis/blob/main/week1/week1_data_analysis.ipynb)
 
 
-
+### [Week 2: Interactive Stolen Anchors](https://theresa-hefele.github.io/risk-analysis/week2/interactive_stolen_anchors.html)
 
 
 

@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bayes' Theorem Interactive Visualizer</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- MathJax for TeX rendering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            user-select: none;
+        }
+        /* Custom hatched patterns matching TikZ style */
+        .hatched-pattern {
+            background-image: repeating-linear-gradient(
+                45deg,
+                rgba(30, 64, 175, 0.35),
+                rgba(30, 64, 175, 0.35) 6px,
+                transparent 6px,
+                transparent 12px
+            );
+        }
+        .hatched-pattern-light {
+            background-image: repeating-linear-gradient(
+                45deg,
+                rgba(59, 130, 246, 0.25),
+                rgba(59, 130, 246, 0.25) 6px,
+                transparent 6px,
+                transparent 12px
+            );
+        }
+        /* Interactive Drag Lines */
+        .drag-handle-v {
+            cursor: col-resize;
+        }
+        .drag-handle-h {
+            cursor: row-resize;
+        }
+        .drag-handle-v:hover, .drag-handle-h:hover, .dragging {
+            background-color: #ef4444 !important;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.8);
+        }
+        /* Mathematical display smooth updates */
+        .math-box {
+            transition: background-color 0.2s ease;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between">
+
+    <!-- Top Navigation Header -->
+    <header class="bg-slate-800 border-b border-slate-700 px-6 py-4 shadow-md flex flex-wrap justify-between items-center gap-4">
+        <div class="flex items-center space-x-3">
+            <div class="bg-blue-600 text-white p-2 rounded-lg font-bold text-xl">
+                <i class="fa-solid font-mono">P(A|B)</i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold text-white tracking-tight">Bayes' Theorem Interactive Diagram</h1>
+                <p class="text-xs text-slate-400">Classroom Demonstration Tool • Area-Based Probability Model</p>
+            </div>
+        </div>
+
+        <!-- Mode & Preset Selectors -->
+        <div class="flex flex-wrap items-center gap-3">
+            <!-- Scaling Mode Switcher -->
+            <div class="bg-slate-900 border border-slate-700 p-1 rounded-lg flex items-center">
+                <button id="scaleLinearBtn" onclick="setScaleMode('linear')" class="px-3 py-1.5 text-xs font-semibold rounded-md bg-blue-600 text-white transition-all">
+                    Linear Scale
+                </button>
+                <button id="scaleLogBtn" onclick="setScaleMode('log')" class="px-3 py-1.5 text-xs font-semibold rounded-md text-slate-400 hover:text-white transition-all">
+                    Log/Magnified (10⁻⁴ Visible)
+                </button>
+            </div>
+
+            <!-- Preset Dropdown -->
+            <select id="presetSelect" onchange="applyPreset(this.value)" class="bg-slate-700 border border-slate-600 text-white text-xs rounded-lg px-3 py-2 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="custom">Preset: Select Example...</option>
+                <option value="image_default" selected>Image Example (10% Prior, 1% & 0.01% Conditions)</option>
+                <option value="medical">Medical Test (Rare Disease - 1% Prevalence)</option>
+                <option value="spam">Spam Detection Filter (20% Spam Rate)</option>
+                <option value="equal">Symmetric 50/50 Probabilities</option>
+            </select>
+
+            <!-- Reset Button -->
+            <button onclick="resetDefaults()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 p-2 rounded-lg text-xs font-medium transition" title="Reset Values">
+                <i class="fa-solid fa-rotate-left"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Left Column: Interactive Visual Square (7 Cols) -->
+        <section class="lg:col-span-7 bg-slate-800 border border-slate-700 rounded-xl p-4 md:p-6 flex flex-col justify-between shadow-xl relative overflow-hidden">
+            
+            <div class="flex justify-between items-center mb-2">
+                <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-up-right-and-down-left-from-center text-blue-400"></i>
+                    Interactive Probability Area (Unit Square = 1.0)
+                </h2>
+                <span class="text-xs bg-slate-700 text-slate-300 px-2.5 py-1 rounded-full">
+                    Drag red/blue borders directly
+                </span>
+            </div>
+
+            <!-- Visual SVG / Canvas Container -->
+            <div class="relative w-full aspect-square max-w-[500px] mx-auto my-auto bg-slate-950 rounded-lg p-8 border border-slate-700 select-none" id="squareContainer">
+                
+                <!-- Main Unit Square Box -->
+                <div id="unitSquare" class="relative w-full h-full bg-slate-300 rounded border-2 border-slate-500 overflow-hidden shadow-inner">
+
+                    <!-- Left Column: A-bar (Complement) -->
+                    <div id="regionAbar" class="absolute top-0 bottom-0 left-0 bg-slate-400 transition-none border-r-2 border-slate-600 flex flex-col justify-end">
+                        <!-- F given A-bar (Bottom hatched region) -->
+                        <div id="regionF_Abar" class="w-full bg-blue-600/30 border-t-2 border-blue-500 hatched-pattern relative">
+                            <!-- Blue Arrow inside F|A-bar -->
+                            <div class="absolute inset-x-0 bottom-1 flex justify-center text-blue-900 drop-shadow">
+                                <i class="fa-solid fa-arrow-up text-lg font-bold"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: A -->
+                    <div id="regionA" class="absolute top-0 bottom-0 right-0 bg-slate-200 transition-none flex flex-col justify-end">
+                        <!-- F given A (Bottom hatched region) -->
+                        <div id="regionF_A" class="w-full bg-blue-400/20 border-t-2 border-blue-400 hatched-pattern-light relative">
+                            <!-- Tiny Arrow for F|A -->
+                            <div class="absolute inset-x-0 bottom-0.5 flex justify-center text-blue-800 drop-shadow">
+                                <i class="fa-solid fa-arrow-up text-xs font-bold"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DRAGGABLE BORDERS -->
+                    <!-- Vertical Splitter: P(A-bar) vs P(A) -->
+                    <div id="dragV" class="absolute top-0 bottom-0 w-2.5 -ml-1 bg-slate-700/80 hover:bg-red-500 drag-handle-v z-30 flex items-center justify-center transition-colors">
+                        <div class="w-0.5 h-8 bg-slate-200 rounded"></div>
+                    </div>
+
+                    <!-- Left Horizontal Splitter: P(F|A-bar) -->
+                    <div id="dragH_Abar" class="absolute h-2.5 -mt-1 bg-blue-700/80 hover:bg-red-500 drag-handle-h z-20 flex items-center justify-center transition-colors">
+                        <div class="h-0.5 w-6 bg-white rounded"></div>
+                    </div>
+
+                    <!-- Right Horizontal Splitter: P(F|A) -->
+                    <div id="dragH_A" class="absolute h-2.5 -mt-1 bg-blue-500/80 hover:bg-red-500 drag-handle-h z-20 flex items-center justify-center transition-colors">
+                        <div class="h-0.5 w-6 bg-white rounded"></div>
+                    </div>
+
+                </div>
+
+                <!-- OVERLAY ANNOTATIONS (TEX / LABELS) matching diagram image -->
+                <!-- Top Arrows & Prior Labels -->
+                <div class="absolute -top-1 left-8 right-8 flex justify-between items-center text-slate-200 text-xs sm:text-sm font-medium">
+                    <div id="labelPriorAbar" class="text-left font-serif">\(P(\bar{A}) = 10\%\)</div>
+                    <div id="labelPriorA" class="text-right font-serif text-slate-300">\(P(A) = 90\%\)</div>
+                </div>
+
+                <!-- Top Horizontal Arrows -->
+                <div class="absolute top-5 left-8 right-8 h-4 pointer-events-none">
+                    <svg class="w-full h-full" overflow="visible">
+                        <defs>
+                            <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="#475569"/>
+                            </marker>
+                            <marker id="arrow-blue" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="#1e40af"/>
+                            </marker>
+                        </defs>
+                        <!-- Left Arrow -->
+                        <line id="arrowAbar" x1="0" y1="8" x2="50" y2="8" stroke="#475569" stroke-width="2" marker-end="url(#arrow)" />
+                        <!-- Right Arrow -->
+                        <line id="arrowA" x1="50" y1="8" x2="100%" y2="8" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)" />
+                    </svg>
+                </div>
+
+                <!-- Left Conditional Label P(F|A-bar) -->
+                <div id="labelCondAbar" class="absolute -left-20 sm:-left-28 bottom-12 text-blue-300 font-serif text-xs sm:text-sm font-semibold">
+                    \(P(F|\bar{A}) = 10^{-2}\)
+                </div>
+
+                <!-- Right Conditional Label P(F|A) -->
+                <div id="labelCondA" class="absolute -right-20 sm:-right-28 bottom-4 text-blue-400 font-serif text-xs sm:text-sm font-semibold">
+                    \(P(F|A) = 10^{-4}\)
+                </div>
+
+            </div>
+
+            <!-- Interactive Sliders Panel -->
+            <div class="mt-4 bg-slate-900/80 p-3 rounded-lg border border-slate-700 space-y-2 text-xs">
+                <div class="flex items-center justify-between gap-4">
+                    <label class="font-medium text-slate-300 w-32">Prior \(P(\bar{A})\):</label>
+                    <input type="range" id="sliderP_Abar" min="0.001" max="0.999" step="0.001" value="0.10" class="w-full accent-blue-500 h-1.5 bg-slate-700 rounded-lg cursor-pointer" oninput="updateFromSliders()">
+                    <span id="valP_Abar" class="font-mono text-blue-400 w-16 text-right font-bold">10.0%</span>
+                </div>
+                <div class="flex items-center justify-between gap-4">
+                    <label class="font-medium text-slate-300 w-32">Likelihood \(P(F|\bar{A})\):</label>
+                    <input type="range" id="sliderP_F_Abar" min="0.0001" max="1.0" step="0.0001" value="0.01" class="w-full accent-blue-500 h-1.5 bg-slate-700 rounded-lg cursor-pointer" oninput="updateFromSliders()">
+                    <span id="valP_F_Abar" class="font-mono text-blue-400 w-16 text-right font-bold">1.0%</span>
+                </div>
+                <div class="flex items-center justify-between gap-4">
+                    <label class="font-medium text-slate-300 w-32">Likelihood \(P(F|A)\):</label>
+                    <input type="range" id="sliderP_F_A" min="0.00001" max="1.0" step="0.00001" value="0.0001" class="w-full accent-blue-400 h-1.5 bg-slate-700 rounded-lg cursor-pointer" oninput="updateFromSliders()">
+                    <span id="valP_F_A" class="font-mono text-blue-300 w-16 text-right font-bold">0.01%</span>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Right Column: Mathematical Explanations & Bayes Calculations (5 Cols) -->
+        <section class="lg:col-span-5 flex flex-col gap-4">
+
+            <!-- Card 1: Bayes' Theorem Formula & Breakdown -->
+            <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-xl">
+                <h3 class="text-sm font-semibold text-blue-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-calculator"></i>
+                    Bayes' Theorem Formula
+                </h3>
+
+                <!-- Bayes Equation TeX Box -->
+                <div class="bg-slate-900 border border-slate-700 p-3 rounded-lg text-center overflow-x-auto mb-4">
+                    <div id="texBayesFormula" class="text-base text-white">
+                        \[ P(\bar{A}|F) = \frac{P(F|\bar{A}) \cdot P(\bar{A})}{P(F)} \]
+                    </div>
+                </div>
+
+                <!-- Step-by-Step Values Table -->
+                <div class="space-y-2 text-xs">
+                    
+                    <!-- Joint Probabilities (Areas) -->
+                    <div class="bg-slate-900/60 p-2.5 rounded border border-slate-700 flex justify-between items-center">
+                        <div>
+                            <span class="font-semibold text-blue-300">Target Area \(P(F \cap \bar{A})\):</span>
+                            <div class="text-[10px] text-slate-400">\(P(\bar{A}) \cdot P(F|\bar{A})\)</div>
+                        </div>
+                        <span id="calcJointAbar" class="font-mono font-bold text-blue-400 text-sm">0.001000</span>
+                    </div>
+
+                    <div class="bg-slate-900/60 p-2.5 rounded border border-slate-700 flex justify-between items-center">
+                        <div>
+                            <span class="font-semibold text-slate-300">False Positive Area \(P(F \cap A)\):</span>
+                            <div class="text-[10px] text-slate-400">\(P(A) \cdot P(F|A)\)</div>
+                        </div>
+                        <span id="calcJointA" class="font-mono font-bold text-slate-300 text-sm">0.000090</span>
+                    </div>
+
+                    <!-- Total Evidence P(F) -->
+                    <div class="bg-blue-950/40 p-2.5 rounded border border-blue-800 flex justify-between items-center">
+                        <div>
+                            <span class="font-semibold text-blue-200">Total Feature Area \(P(F)\):</span>
+                            <div class="text-[10px] text-blue-300/70">Sum of striped regions: \(P(F \cap \bar{A}) + P(F \cap A)\)</div>
+                        </div>
+                        <span id="calcTotalF" class="font-mono font-bold text-blue-300 text-sm">0.001090</span>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Card 2: Final Posterior Results (Highlighted) -->
+            <div class="bg-gradient-to-br from-blue-900/40 to-slate-800 border border-blue-500/30 rounded-xl p-5 shadow-xl">
+                <h3 class="text-sm font-semibold text-amber-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-bullseye"></i>
+                    Posterior Probabilities
+                </h3>
+
+                <div class="grid grid-cols-2 gap-3 mt-3">
+                    <!-- Posterior P(A-bar | F) -->
+                    <div class="bg-slate-900/90 p-3 rounded-lg border border-blue-500/40 text-center">
+                        <div class="text-xs text-slate-400 mb-1">Posterior \(P(\bar{A}|F)\)</div>
+                        <div id="calcPosteriorAbar" class="text-2xl font-black text-blue-400 font-mono">91.74%</div>
+                        <div class="text-[10px] text-slate-400 mt-1">Given feature \(F\), chance of \(\bar{A}\)</div>
+                    </div>
+
+                    <!-- Posterior P(A | F) -->
+                    <div class="bg-slate-900/90 p-3 rounded-lg border border-slate-700 text-center">
+                        <div class="text-xs text-slate-400 mb-1">Posterior \(P(A|F)\)</div>
+                        <div id="calcPosteriorA" class="text-2xl font-black text-slate-300 font-mono">8.26%</div>
+                        <div class="text-[10px] text-slate-400 mt-1">Given feature \(F\), chance of \(A\)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 3: Classroom Teaching Tip -->
+            <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-4 text-xs text-slate-300 leading-relaxed">
+                <div class="font-semibold text-slate-200 mb-1 flex items-center gap-1.5">
+                    <i class="fa-regular fa-lightbulb text-amber-400"></i> Classroom Insight:
+                </div>
+                <p id="teachingTipText">
+                    Comparing the two striped blue area regions visually demonstrates why base rates matter: even if $P(F|A)$ is tiny ($10^{-4}$), a large prior $P(A)=90\%$ can create a noticeable portion of the total blue feature area $P(F)$.
+                </p>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-950 border-t border-slate-800 py-3 text-center text-xs text-slate-500">
+        Bayes' Theorem Interactive Visualizer • Designed for Classroom Demonstration
+    </footer>
+
+    <!-- Application Logic -->
+    <script>
+        // Core State Variables
+        let state = {
+            p_Abar: 0.10,        // Prior P(A_bar) = 10%
+            p_F_Abar: 0.01,      // Likelihood P(F|A_bar) = 10^-2 = 1%
+            p_F_A: 0.0001,       // Likelihood P(F|A) = 10^-4 = 0.01%
+            scaleMode: 'linear'  // 'linear' or 'log'
+        };
+
+        // Interaction State
+        let isDragging = null; // 'V', 'H_Abar', 'H_A'
+
+        // DOM Elements
+        const unitSquare = document.getElementById('unitSquare');
+        const regionAbar = document.getElementById('regionAbar');
+        const regionA = document.getElementById('regionA');
+        const regionF_Abar = document.getElementById('regionF_Abar');
+        const regionF_A = document.getElementById('regionF_A');
+
+        const dragV = document.getElementById('dragV');
+        const dragH_Abar = document.getElementById('dragH_Abar');
+        const dragH_A = document.getElementById('dragH_A');
+
+        // Initial setup on window load
+        window.onload = function() {
+            setupDragListeners();
+            updateUI();
+        };
+
+        // Scale transform function for Visual Display
+        function getVisualHeightRatio(prob) {
+            if (state.scaleMode === 'linear') {
+                return prob;
+            } else {
+                // Logarithmic / Magnified scaling so small values like 10^-4 are visually clear
+                if (prob <= 0) return 0;
+                // Scale 10^-5 to 1.0 into 0.05 to 1.0 visual height range
+                const logVal = Math.log10(Math.max(prob, 0.00001));
+                // logVal is between -5 and 0
+                return Math.max(0.04, (logVal + 5) / 5);
+            }
+        }
+
+        // Reverse scale transform for dragging height back to probability
+        function getProbFromVisualRatio(ratio) {
+            if (state.scaleMode === 'linear') {
+                return Math.min(1, Math.max(0.00001, ratio));
+            } else {
+                // Inverse log mapping
+                const logVal = (ratio * 5) - 5;
+                return Math.min(1, Math.max(0.00001, Math.pow(10, logVal)));
+            }
+        }
+
+        // Main UI Update Loop
+        function updateUI() {
+            const p_A = 1 - state.p_Abar;
+
+            // 1. Update Square Divisions (Geometry)
+            const widthAbarPct = state.p_Abar * 100;
+            const widthAPct = p_A * 100;
+
+            regionAbar.style.width = widthAbarPct + '%';
+            regionA.style.width = widthAPct + '%';
+
+            // Visual height ratios depending on scale mode
+            const visualH_Abar = getVisualHeightRatio(state.p_F_Abar) * 100;
+            const visualH_A = getVisualHeightRatio(state.p_F_A) * 100;
+
+            regionF_Abar.style.height = visualH_Abar + '%';
+            regionF_A.style.height = visualH_A + '%';
+
+            // 2. Position Draggable Handle Lines
+            dragV.style.left = widthAbarPct + '%';
+
+            dragH_Abar.style.left = '0%';
+            dragH_Abar.style.width = widthAbarPct + '%';
+            dragH_Abar.style.bottom = visualH_Abar + '%';
+
+            dragH_A.style.left = widthAbarPct + '%';
+            dragH_A.style.width = widthAPct + '%';
+            dragH_A.style.bottom = visualH_A + '%';
+
+            // 3. Dynamic Labels on Graphic
+            document.getElementById('labelPriorAbar').innerHTML = `\\(P(\\bar{A}) = ${formatPercent(state.p_Abar)}\\)`;
+            document.getElementById('labelPriorA').innerHTML = `\\(P(A) = ${formatPercent(p_A)}\\)`;
+
+            document.getElementById('labelCondAbar').innerHTML = `\\(P(F|\\bar{A}) = ${formatPowerOfTen(state.p_F_Abar)}\\)`;
+            document.getElementById('labelCondA').innerHTML = `\\(P(F|A) = ${formatPowerOfTen(state.p_F_A)}\\)`;
+
+            // Top Arrow SVG Updates
+            const arrowAbar = document.getElementById('arrowAbar');
+            const arrowA = document.getElementById('arrowA');
+            if (arrowAbar && arrowA) {
+                arrowAbar.setAttribute('x2', `${widthAbarPct}%`);
+                arrowA.setAttribute('x1', `${widthAbarPct}%`);
+            }
+
+            // 4. Update Sliders and Input Values
+            document.getElementById('sliderP_Abar').value = state.p_Abar;
+            document.getElementById('sliderP_F_Abar').value = state.p_F_Abar;
+            document.getElementById('sliderP_F_A').value = state.p_F_A;
+
+            document.getElementById('valP_Abar').innerText = formatPercent(state.p_Abar);
+            document.getElementById('valP_F_Abar').innerText = formatPercent(state.p_F_Abar);
+            document.getElementById('valP_F_A').innerText = formatPercent(state.p_F_A);
+
+            // 5. Calculate Bayes Theorem Terms
+            const jointAbar = state.p_Abar * state.p_F_Abar;
+            const jointA = p_A * state.p_F_A;
+            const totalF = jointAbar + jointA;
+
+            const posteriorAbar = totalF > 0 ? (jointAbar / totalF) : 0;
+            const posteriorA = totalF > 0 ? (jointA / totalF) : 0;
+
+            // 6. Render Math Calculations
+            document.getElementById('calcJointAbar').innerText = jointAbar.toFixed(6);
+            document.getElementById('calcJointA').innerText = jointA.toFixed(6);
+            document.getElementById('calcTotalF').innerText = totalF.toFixed(6);
+
+            document.getElementById('calcPosteriorAbar').innerText = (posteriorAbar * 100).toFixed(2) + '%';
+            document.getElementById('calcPosteriorA').innerText = (posteriorA * 100).toFixed(2) + '%';
+
+            // Re-render MathJax dynamic elements
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise();
+            }
+        }
+
+        // Helper formatting functions
+        function formatPercent(val) {
+            if (val < 0.001) return (val * 100).toFixed(3) + '%';
+            if (val < 0.01) return (val * 100).toFixed(2) + '%';
+            return (val * 100).toFixed(1) + '%';
+        }
+
+        function formatPowerOfTen(val) {
+            if (val === 0.01) return '10^{-2}';
+            if (val === 0.0001) return '10^{-4}';
+            if (val === 0.001) return '10^{-3}';
+            if (val === 0.1) return '0.10';
+            if (Math.abs(Math.log10(val) - Math.round(Math.log10(val))) < 1e-4) {
+                return `10^{${Math.round(Math.log10(val))}}`;
+            }
+            return val < 0.01 ? val.toExponential(2) : (val * 100).toFixed(1) + '\\%';
+        }
+
+        // Dragging Event Handlers
+        function setupDragListeners() {
+            const container = unitSquare;
+
+            const onPointerDown = (e, target) => {
+                isDragging = target;
+                document.body.classList.add('cursor-grabbing');
+                e.preventDefault();
+            };
+
+            dragV.addEventListener('mousedown', (e) => onPointerDown(e, 'V'));
+            dragH_Abar.addEventListener('mousedown', (e) => onPointerDown(e, 'H_Abar'));
+            dragH_A.addEventListener('mousedown', (e) => onPointerDown(e, 'H_A'));
+
+            // Touch support
+            dragV.addEventListener('touchstart', (e) => onPointerDown(e, 'V'));
+            dragH_Abar.addEventListener('touchstart', (e) => onPointerDown(e, 'H_Abar'));
+            dragH_A.addEventListener('touchstart', (e) => onPointerDown(e, 'H_A'));
+
+            window.addEventListener('pointermove', (e) => {
+                if (!isDragging) return;
+
+                const rect = container.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+
+                const ratioX = Math.max(0.01, Math.min(0.99, mouseX / rect.width));
+                const ratioY = Math.max(0.001, Math.min(0.999, 1 - (mouseY / rect.height)));
+
+                if (isDragging === 'V') {
+                    state.p_Abar = ratioX;
+                } else if (isDragging === 'H_Abar') {
+                    state.p_F_Abar = getProbFromVisualRatio(ratioY);
+                } else if (isDragging === 'H_A') {
+                    state.p_F_A = getProbFromVisualRatio(ratioY);
+                }
+
+                // Reset preset selector to custom
+                document.getElementById('presetSelect').value = 'custom';
+                updateUI();
+            });
+
+            window.addEventListener('pointerup', () => {
+                isDragging = null;
+                document.body.classList.remove('cursor-grabbing');
+            });
+        }
+
+        // Slider Updates
+        function updateFromSliders() {
+            state.p_Abar = parseFloat(document.getElementById('sliderP_Abar').value);
+            state.p_F_Abar = parseFloat(document.getElementById('sliderP_F_Abar').value);
+            state.p_F_A = parseFloat(document.getElementById('sliderP_F_A').value);
+
+            document.getElementById('presetSelect').value = 'custom';
+            updateUI();
+        }
+
+        // Scale Mode Switcher
+        function setScaleMode(mode) {
+            state.scaleMode = mode;
+            const btnLinear = document.getElementById('scaleLinearBtn');
+            const btnLog = document.getElementById('scaleLogBtn');
+
+            if (mode === 'linear') {
+                btnLinear.className = 'px-3 py-1.5 text-xs font-semibold rounded-md bg-blue-600 text-white transition-all';
+                btnLog.className = 'px-3 py-1.5 text-xs font-semibold rounded-md text-slate-400 hover:text-white transition-all';
+            } else {
+                btnLog.className = 'px-3 py-1.5 text-xs font-semibold rounded-md bg-blue-600 text-white transition-all';
+                btnLinear.className = 'px-3 py-1.5 text-xs font-semibold rounded-md text-slate-400 hover:text-white transition-all';
+            }
+            updateUI();
+        }
+
+        // Presets Configuration
+        function applyPreset(presetKey) {
+            if (presetKey === 'image_default') {
+                state.p_Abar = 0.10;
+                state.p_F_Abar = 0.01;
+                state.p_F_A = 0.0001;
+                document.getElementById('teachingTipText').innerHTML = 
+                    "<strong>Image Default:</strong> Notice how even with $P(F|A) = 10^{-4}$ (0.01%), the $90\\%$ prior $P(A)$ causes false positives to account for ~8.26% of all positive feature detections.";
+            } else if (presetKey === 'medical') {
+                state.p_Abar = 0.01;   // 1% Disease Prevalence
+                state.p_F_Abar = 0.95; // 95% Sensitivity
+                state.p_F_A = 0.05;    // 5% False Positive Rate
+                document.getElementById('teachingTipText').innerHTML = 
+                    "<strong>Medical Test Paradox:</strong> With 1% disease prevalence and a 95% accurate test, a patient testing positive still only has a ~16% chance of actually having the disease!";
+            } else if (presetKey === 'spam') {
+                state.p_Abar = 0.20;   // 20% Spam
+                state.p_F_Abar = 0.80; // 80% contains word 'FREE'
+                state.p_F_A = 0.02;    // 2% ham contains word 'FREE'
+                document.getElementById('teachingTipText').innerHTML = 
+                    "<strong>Spam Filter:</strong> If an email contains the trigger word 'FREE', the probability that it's spam jumps from a 20% prior to over 90% posterior.";
+            } else if (presetKey === 'equal') {
+                state.p_Abar = 0.50;
+                state.p_F_Abar = 0.50;
+                state.p_F_A = 0.50;
+                document.getElementById('teachingTipText').innerHTML = 
+                    "<strong>Symmetric Baseline:</strong> Equal prior and conditional probabilities yield equal area divisions everywhere.";
+            }
+            updateUI();
+        }
+
+        function resetDefaults() {
+            document.getElementById('presetSelect').value = 'image_default';
+            applyPreset('image_default');
+        }
+    </script>
+</body>
+</html>
