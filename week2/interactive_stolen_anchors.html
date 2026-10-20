@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Interactive Bayes Square & Venn Diagram</title>
-  <!-- MathJax for rendering LaTeX formulas smoothly -->
+  <!-- MathJax for rendering LaTeX formulas -->
   <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
   <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
   <style>
@@ -15,11 +15,9 @@
       --text-main: #f8fafc;
       --text-muted: #94a3b8;
       --accent-blue: #38bdf8;
-      --accent-pA: #64748b;
-      --accent-pA-bar: #475569;
+      --accent-pSbar: #64748b;
       --accent-F: #0284c7;
-      --accent-F-glow: rgba(56, 189, 248, 0.2);
-      --font-stack: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      --font-stack: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
 
     * {
@@ -73,13 +71,13 @@
 
     @media (min-width: 992px) {
       .app-layout {
-        grid-template-columns: 1.1fr 0.9fr;
+        grid-template-columns: 1.15fr 0.85fr;
       }
     }
 
     .panel {
       background: var(--panel-bg);
-      border: 1fr solid var(--panel-border);
+      border: 1px solid var(--panel-border);
       border-radius: 12px;
       padding: 20px;
       box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
@@ -99,12 +97,11 @@
       align-items: center;
     }
 
-    /* SVG Canvas Area */
     .canvas-container {
       position: relative;
       width: 100%;
       aspect-ratio: 1 / 1;
-      max-height: 520px;
+      max-height: 540px;
       background: #020617;
       border-radius: 8px;
       border: 1px solid var(--panel-border);
@@ -112,46 +109,60 @@
       touch-action: none;
     }
 
-    svg {
+    #bayesSvg {
       width: 100%;
       height: 100%;
       overflow: visible;
     }
 
+    .hit-area {
+      stroke: transparent;
+      stroke-width: 20;
+      fill: none;
+      cursor: pointer;
+    }
+
+    .hit-area-v { cursor: col-resize; }
+    .hit-area-h { cursor: row-resize; }
+
     .interactive-line {
       stroke: #38bdf8;
-      stroke-width: 3;
-      cursor: col-resize;
-      transition: stroke 0.15s;
+      stroke-width: 2.5;
+      transition: stroke-width 0.1s;
     }
 
-    .interactive-line-v {
-      cursor: col-resize;
+    .interactive-line-v { cursor: col-resize; }
+    .interactive-line-h { cursor: row-resize; }
+
+    .interactive-line.locked,
+    .interactive-line.locked:hover {
+      stroke: #fbbf24;
     }
 
-    .interactive-line-h {
-      cursor: row-resize;
+    .interactive-line-h:not(.interactive-line-sbar) {
+      stroke: #22d3ee;
     }
 
-    .interactive-line:hover, .interactive-line.dragging {
+    .interactive-line-sbar {
+      stroke: #fb923c;
+    }
+
+    .hit-area:hover + .interactive-line,
+    .interactive-line:hover {
       stroke: #7dd3fc;
-      stroke-width: 5;
+      stroke-width: 4.5;
     }
 
-    .drag-handle {
-      fill: #38bdf8;
-      stroke: #ffffff;
-      stroke-width: 2;
-      cursor: pointer;
-      transition: r 0.15s, fill 0.15s;
+    .hit-area:hover + .interactive-line-sbar,
+    .interactive-line-sbar:hover {
+      stroke: #fdba74;
     }
 
-    .drag-handle:hover, .drag-handle.dragging {
-      r: 8;
-      fill: #7dd3fc;
+    .interactive-line-sbar.locked,
+    .interactive-line-sbar.locked:hover {
+      stroke: #fde68a;
     }
 
-    /* Controls Styling */
     .controls-group {
       display: flex;
       flex-direction: column;
@@ -164,7 +175,7 @@
 
     .control-item {
       display: grid;
-      grid-template-columns: 140px 1fr 100px;
+      grid-template-columns: 140px 1fr 105px;
       align-items: center;
       gap: 12px;
     }
@@ -172,6 +183,32 @@
     .control-label {
       font-size: 0.9rem;
       font-weight: 500;
+      line-height: 1.25;
+      min-width: 0;
+    }
+
+    .name-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .name-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .name-input {
+      width: 100%;
+      background: transparent;
+      border: none;
+      color: #f8fafc;
+      font-family: monospace;
+      font-size: 0.95rem;
+      font-weight: 600;
+      outline: none;
     }
 
     input[type="range"] {
@@ -186,7 +223,6 @@
 
     input[type="range"]::-webkit-slider-thumb {
       -webkit-appearance: none;
-      appearance: none;
       width: 18px;
       height: 18px;
       border-radius: 50%;
@@ -200,7 +236,6 @@
       transform: scale(1.15);
     }
 
-    /* Direct Input Box for Numbers */
     .input-container {
       display: flex;
       align-items: center;
@@ -208,7 +243,6 @@
       border: 1px solid #475569;
       border-radius: 6px;
       padding: 2px 6px;
-      transition: border-color 0.15s;
     }
 
     .input-container:focus-within {
@@ -222,22 +256,19 @@
       border: none;
       color: #38bdf8;
       font-family: monospace;
-      font-size: 0.95rem;
+      font-size: 0.92rem;
       font-weight: 600;
       text-align: right;
       outline: none;
       padding-right: 2px;
     }
 
-    /* Remove spinner buttons in numbers */
     .number-input::-webkit-inner-spin-button, 
     .number-input::-webkit-outer-spin-button { 
       -webkit-appearance: none;
       margin: 0;
     }
-    .number-input {
-      -moz-appearance: textfield;
-    }
+    .number-input { -moz-appearance: textfield; }
 
     .input-unit {
       color: var(--text-muted);
@@ -273,31 +304,6 @@
       color: #ffffff;
     }
 
-    .view-toggle {
-      display: flex;
-      background: #0f172a;
-      padding: 3px;
-      border-radius: 6px;
-      border: 1px solid var(--panel-border);
-    }
-
-    .view-toggle button {
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      padding: 4px 10px;
-      font-size: 0.8rem;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-
-    .view-toggle button.active {
-      background: #334155;
-      color: var(--accent-blue);
-      font-weight: 600;
-    }
-
-    /* Formula & Results Card */
     .bayes-card {
       background: #020617;
       border: 1px solid var(--panel-border);
@@ -309,12 +315,29 @@
     }
 
     .formula-display {
-      font-size: 1rem;
+      font-size: 0.95rem;
       text-align: center;
-      padding: 10px;
+      padding: 8px 8px 2px;
       background: rgba(30, 41, 59, 0.5);
       border-radius: 6px;
       overflow-x: auto;
+    }
+
+    .formula-line {
+      white-space: nowrap;
+    }
+
+    .visual-fraction {
+      background: transparent;
+      padding: 0 4px 4px;
+      overflow-x: auto;
+    }
+
+    .visual-fraction svg {
+      width: 100%;
+      height: auto;
+      display: block;
+      min-width: 340px;
     }
 
     .result-box {
@@ -340,7 +363,6 @@
       font-family: monospace;
     }
 
-    /* Dynamic LaTeX annotations list */
     .steps-list {
       font-size: 0.85rem;
       color: var(--text-muted);
@@ -352,6 +374,8 @@
     .step-item {
       display: flex;
       justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
       border-bottom: 1px dashed var(--panel-border);
       padding-bottom: 4px;
     }
@@ -362,155 +386,199 @@
 <div class="container">
   <header>
     <h1>Bayes' Theorem Interactive Visualizer</h1>
-    <p>Drag the borders on the diagram or enter custom numerical values to explore updates in real time.</p>
+    <p>Rename the events, drag the borders on the plot, or adjust values with the sliders and number fields.</p>
   </header>
 
   <div class="app-layout">
-    <!-- Left Panel: Interactive Square Mosaic Plot -->
+    <!-- Left Panel: Interactive Square Plot -->
     <div class="panel">
       <div class="panel-title">
         <span>Interactive Mosaic Plot / Square Diagram</span>
-        <div class="view-toggle">
-          <button id="scaleLinear" class="active" onclick="setScaleMode('linear')">Linear</button>
-          <button id="scaleLog" onclick="setScaleMode('log')">Mag View</button>
-        </div>
       </div>
 
       <div class="canvas-container" id="canvasContainer">
-        <svg id="bayesSvg" viewBox="0 0 500 500">
+        <svg id="bayesSvg" viewBox="0 0 540 500">
           <defs>
-            <!-- Pattern for Event F in A_bar -->
-            <pattern id="hatchAbar" width="12" height="12" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
-              <line x1="0" y1="0" x2="0" y2="12" stroke="#38bdf8" stroke-width="3" />
+            <pattern id="hatchS" width="12" height="12" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+              <line x1="0" y1="0" x2="0" y2="12" stroke="#67e8f9" stroke-width="2.2" />
             </pattern>
-            <!-- Pattern for Event F in A -->
-            <pattern id="hatchA" width="12" height="12" patternTransform="rotate(-45 0 0)" patternUnits="userSpaceOnUse">
-              <line x1="0" y1="0" x2="0" y2="12" stroke="#0284c7" stroke-width="3" />
+            <pattern id="hatchSbar" width="12" height="12" patternTransform="rotate(-45 0 0)" patternUnits="userSpaceOnUse">
+              <line x1="0" y1="0" x2="0" y2="12" stroke="#fdba74" stroke-width="2.2" />
             </pattern>
-            <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+
+            <filter id="glowCyan" filterUnits="userSpaceOnUse" x="-50" y="-50" width="700" height="1400" color-interpolation-filters="sRGB">
+              <feGaussianBlur in="SourceAlpha" stdDeviation="5" result="wide"/>
+              <feFlood flood-color="#22d3ee" flood-opacity="0.9" result="wideColor"/>
+              <feComposite in="wideColor" in2="wide" operator="in" result="wideGlow"/>
+              <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="tight"/>
+              <feFlood flood-color="#67e8f9" flood-opacity="1" result="tightColor"/>
+              <feComposite in="tightColor" in2="tight" operator="in" result="tightGlow"/>
+              <feMerge>
+                <feMergeNode in="wideGlow"/>
+                <feMergeNode in="tightGlow"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+            <filter id="glowOrange" filterUnits="userSpaceOnUse" x="-50" y="-50" width="700" height="1400" color-interpolation-filters="sRGB">
+              <feGaussianBlur in="SourceAlpha" stdDeviation="5" result="wide"/>
+              <feFlood flood-color="#f97316" flood-opacity="0.9" result="wideColor"/>
+              <feComposite in="wideColor" in2="wide" operator="in" result="wideGlow"/>
+              <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="tight"/>
+              <feFlood flood-color="#fdba74" flood-opacity="1" result="tightColor"/>
+              <feComposite in="tightColor" in2="tight" operator="in" result="tightGlow"/>
+              <feMerge>
+                <feMergeNode in="wideGlow"/>
+                <feMergeNode in="tightGlow"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+            
+            <!-- Upward Arrowhead Definition -->
+            <marker id="arrowUp" viewBox="0 0 10 10" refX="5" refY="0" markerWidth="6" markerHeight="6" orient="0">
+              <path d="M 0 10 L 5 0 L 10 10 z" fill="#67e8f9"/>
+            </marker>
+            <marker id="arrowUpOrange" viewBox="0 0 10 10" refX="5" refY="0" markerWidth="6" markerHeight="6" orient="0">
+              <path d="M 0 10 L 5 0 L 10 10 z" fill="#fb923c"/>
+            </marker>
+            <marker id="arrowPrior" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto">
               <path d="M 0 0 L 10 5 L 0 10 z" fill="#38bdf8"/>
             </marker>
-            <marker id="arrow-gray" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8"/>
+            <marker id="arrowPriorOrange" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#fb923c"/>
             </marker>
           </defs>
 
-          <!-- Main Square Area (Universe) -->
-          <!-- Left Rect: A_bar -->
-          <rect id="rectAbar" x="50" y="50" width="40" height="400" fill="#475569" opacity="0.6" />
-          <!-- Right Rect: A -->
-          <rect id="rectA" x="90" y="50" width="360" height="400" fill="#334155" opacity="0.3" />
+          <!-- Base Rectangles -->
+          <rect id="rectS" x="90" y="50" width="40" height="400" fill="#475569" opacity="0.5" />
+          <rect id="rectSbar" x="130" y="50" width="360" height="400" fill="#334155" opacity="0.3" />
 
-          <!-- Conditional Sub-rectangles for Event F -->
-          <!-- F given A_bar (Left Stripe Area) -->
-          <rect id="rectF_Abar" x="50" y="410" width="40" height="40" fill="url(#hatchAbar)" opacity="0.85" />
-          <!-- F given A (Right Stripe Area) -->
-          <rect id="rectF_A" x="90" y="446" width="360" height="4" fill="url(#hatchA)" opacity="0.85" />
+          <!-- Likelihood Rectangles (F Areas) -->
+          <g filter="url(#glowCyan)">
+            <rect id="rectF_S" x="90" y="410" width="40" height="40" fill="url(#hatchS)" stroke="#22d3ee" stroke-width="1.4" />
+            <line id="lineH_S" class="interactive-line interactive-line-h" x1="90" y1="410" x2="130" y2="410" />
+          </g>
+          <line id="hitH_S" class="hit-area hit-area-h" x1="90" y1="410" x2="130" y2="410" />
+          <g filter="url(#glowOrange)">
+            <rect id="rectF_Sbar" x="130" y="446" width="360" height="4" fill="url(#hatchSbar)" stroke="#fb923c" stroke-width="1.4" />
+            <line id="lineH_Sbar" class="interactive-line interactive-line-h interactive-line-sbar" x1="130" y1="446" x2="490" y2="446" />
+          </g>
+          <line id="hitH_Sbar" class="hit-area hit-area-h" x1="130" y1="446" x2="490" y2="446" />
 
-          <!-- Horizontal Top Arrows and Labels -->
-          <line id="arrowAbar" x1="50" y1="30" x2="88" y2="30" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow-gray)" />
-          <line id="arrowA" x1="90" y1="30" x2="448" y2="30" stroke="#64748b" stroke-width="2" marker-end="url(#arrow-gray)" />
+          <!-- Top Arrows and Prior Labels -->
+          <line id="arrowS" x1="90" y1="30" x2="128" y2="30" stroke="#38bdf8" stroke-width="2" marker-end="url(#arrowPrior)" />
+          <line id="arrowSbar" x1="130" y1="30" x2="488" y2="30" stroke="#fb923c" stroke-width="2" marker-end="url(#arrowPriorOrange)" />
           
-          <text id="labelP_Abar" x="70" y="20" fill="#f8fafc" font-size="14" text-anchor="middle" font-family="monospace">P(Ā)=10%</text>
-          <text id="labelP_A" x="270" y="20" fill="#94a3b8" font-size="14" text-anchor="middle" font-family="monospace">P(A)=90%</text>
+          <text id="labelP_S" x="110" y="20" fill="#38bdf8" font-size="13" text-anchor="middle" font-family="monospace">P(S) = 10%</text>
+          <text id="labelP_Sbar" x="310" y="20" fill="#fb923c" font-size="13" text-anchor="middle" font-family="monospace">P(S̄) = 90%</text>
+          <line id="overlineP_Sbar" stroke="#fb923c" stroke-width="1.2" stroke-linecap="round" opacity="0" />
 
-          <!-- Vertical Interactive Lines & Handles -->
-          <!-- Vertical Split Line P(A_bar) vs P(A) -->
-          <line id="lineV" class="interactive-line interactive-line-v" x1="90" y1="50" x2="90" y2="450" />
+          <!-- Vertical Separation Boundary P(S) vs P(\bar{S}) -->
+          <line id="lineV" class="interactive-line interactive-line-v" x1="130" y1="50" x2="130" y2="450" />
+          <line id="hitV" class="hit-area hit-area-v" x1="130" y1="50" x2="130" y2="450" />
 
-          <!-- Horizontal Split Lines for Likelihoods -->
-          <line id="lineH_Abar" class="interactive-line interactive-line-h" x1="50" y1="410" x2="90" y2="410" />
-          <line id="lineH_A" class="interactive-line interactive-line-h" x1="90" y1="446" x2="450" y2="446" />
+          <!-- Vertical Arrows Pointing Upward to Boundaries -->
+          <line id="arrowF_S" x1="110" y1="450" x2="110" y2="410" stroke="#67e8f9" stroke-width="2.5" marker-end="url(#arrowUp)" />
+          <text id="labelF_S" x="80" y="415" fill="#67e8f9" font-size="12" text-anchor="end" font-family="monospace">P(F|S) = 1e-2</text>
 
-          <!-- Vertical Indicators / Arrows for Likelihoods -->
-          <line id="arrowF_Abar" x1="70" y1="450" x2="70" y2="415" stroke="#38bdf8" stroke-width="2" marker-end="url(#arrow)" />
-          <text id="labelF_Abar" x="40" y="415" fill="#38bdf8" font-size="13" text-anchor="end" font-family="monospace">P(F|Ā)</text>
-
-          <line id="arrowF_A" x1="430" y1="450" x2="430" y2="448" stroke="#38bdf8" stroke-width="2" marker-end="url(#arrow)" />
-          <text id="labelF_A" x="460" y="445" fill="#38bdf8" font-size="13" text-anchor="start" font-family="monospace">P(F|A)</text>
+          <line id="arrowF_Sbar" x1="310" y1="450" x2="310" y2="446" stroke="#fb923c" stroke-width="2.5" marker-end="url(#arrowUpOrange)" />
+          <text id="labelF_Sbar" x="500" y="445" fill="#fb923c" font-size="12" text-anchor="start" font-family="monospace">P(F|S̄) = 1e-4</text>
+          <line id="overlineF_Sbar" stroke="#fb923c" stroke-width="1.2" stroke-linecap="round" opacity="0" />
         </svg>
       </div>
     </div>
 
-    <!-- Right Panel: Controls & Bayes Mathematical Derivation -->
+    <!-- Right Panel: Controls & Calculations -->
     <div class="panel">
       <div class="panel-title">
         <span>Parameters & Direct Input</span>
       </div>
 
-      <!-- Presets -->
+      <div class="name-group">
+        <div class="name-item">
+          <label class="control-label" for="inputNameS">Prior event</label>
+          <div class="input-container">
+            <input type="text" id="inputNameS" class="name-input" value="S" maxlength="16" spellcheck="false" autocomplete="off" aria-label="Prior event name">
+          </div>
+        </div>
+        <div class="name-item">
+          <label class="control-label" for="inputNameF">Observed event</label>
+          <div class="input-container">
+            <input type="text" id="inputNameF" class="name-input" value="F" maxlength="16" spellcheck="false" autocomplete="off" aria-label="Observed event name">
+          </div>
+        </div>
+      </div>
+
       <div class="presets-group">
         <span style="font-size: 0.85rem; color: var(--text-muted); width: 100%;">Preset Scenarios:</span>
-        <button class="btn active" onclick="loadPreset('original')">Image Default</button>
-        <button class="btn" onclick="loadPreset('medical')">Medical Test</button>
-        <button class="btn" onclick="loadPreset('spam')">Spam Filter</button>
-        <button class="btn" onclick="loadPreset('balanced')">Equal Prior (50/50)</button>
+        <button class="btn active" data-preset="original" onclick="loadPreset('original')">Stolen Anchors</button>
+        <button class="btn" data-preset="bridge" onclick="loadPreset('bridge')">Suspension Bridge</button>
+        <button class="btn" data-preset="balanced" onclick="loadPreset('balanced')">Equal Prior (50/50)</button>
+        <button class="btn" id="btnIndependent" onclick="makeIndependent()">F, S independent</button>
       </div>
 
-      <!-- Interactive Controls with Sliders + Editable Number Boxes -->
       <div class="controls-group">
-        <!-- Prior P(A_bar) -->
         <div class="control-item">
-          <label class="control-label">Prior \(P(\bar{A})\):</label>
-          <input type="range" id="sliderP_Abar" min="0.01" max="99.99" step="0.01" value="10">
+          <label class="control-label" id="labelPrior" for="sliderP_S">Prior \(P(S)\):</label>
+          <input type="range" id="sliderP_S" min="0.01" max="99.99" step="0.01" value="10">
           <div class="input-container">
-            <input type="number" id="inputP_Abar" class="number-input" min="0.01" max="99.99" step="0.1" value="10.0">
+            <input type="number" id="inputP_S" class="number-input" min="0.01" max="99.99" step="0.1" value="10.0">
             <span class="input-unit">%</span>
           </div>
         </div>
 
-        <!-- Likelihood P(F|A_bar) -->
         <div class="control-item">
-          <label class="control-label">Likelihood \(P(F\vert{}\bar{A})\):</label>
-          <input type="range" id="sliderF_Abar" min="0.0001" max="100" step="0.0001" value="1">
+          <label class="control-label" id="labelLikelihood" for="sliderF_S">Likelihood \(P(F\vert{}S)\):</label>
+          <input type="range" id="sliderF_S" min="0.0001" max="100" step="0.0001" value="1">
           <div class="input-container">
-            <input type="number" id="inputF_Abar" class="number-input" min="0.0001" max="100" step="0.01" value="1.0">
+            <input type="number" id="inputF_S" class="number-input" min="0.0001" max="100" step="0.01" value="1.0">
             <span class="input-unit">%</span>
           </div>
         </div>
 
-        <!-- Likelihood P(F|A) -->
         <div class="control-item">
-          <label class="control-label">Likelihood \(P(F\vert{}A)\):</label>
-          <input type="range" id="sliderF_A" min="0.00001" max="100" step="0.00001" value="0.01">
+          <label class="control-label" id="labelLikelihoodBar" for="sliderF_Sbar">Likelihood \(P(F\vert{}\bar{S})\):</label>
+          <input type="range" id="sliderF_Sbar" min="0.0001" max="100" step="0.0001" value="0.01">
           <div class="input-container">
-            <input type="number" id="inputF_A" class="number-input" min="0.00001" max="100" step="0.001" value="0.010">
+            <input type="number" id="inputF_Sbar" class="number-input" min="0.0001" max="100" step="0.01" value="0.01">
             <span class="input-unit">%</span>
           </div>
         </div>
       </div>
 
-      <!-- Live Calculation Card -->
       <div class="bayes-card">
         <div class="panel-title" style="border:none; padding:0;">
-          <span>Posterior Probability Calculation</span>
+          <span>Posterior Calculation</span>
         </div>
 
         <div class="formula-display">
-          \[P(\bar{A}\vert{}F) = \frac{P(F\vert{}\bar{A}) \cdot P(\bar{A})}{P(F\vert{}\bar{A}) \cdot P(\bar{A}) + P(F\vert{}A) \cdot P(A)}\]
+          <div class="formula-line" id="formulaLine">
+            \[P(S\vert{}F) = \frac{P(S \cap F)}{P(F)} = \frac{P(F\vert{}S) \cdot P(S)}{P(F\vert{}S) \cdot P(S) + P(F\vert{}\bar{S}) \cdot P(\bar{S})}\]
+          </div>
+
+        <div class="visual-fraction">
+          <svg id="visualFraction" viewBox="0 0 520 168" role="img" aria-label="Posterior as the joint area of S and F over the total area of F">
+            <text id="visEq" x="40" y="78" fill="#f8fafc" font-size="28" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central">=</text>
+            <line id="visBar" x1="70" y1="78" x2="470" y2="78" stroke="#f8fafc" stroke-width="2.5" />
+            <rect id="visNumBase" x="210" y="12" width="58" height="58" fill="#475569" opacity="0.5" />
+            <rect id="visNum" x="210" y="12" width="58" height="58" fill="url(#hatchS)" stroke="#22d3ee" stroke-width="1.4" filter="url(#glowCyan)" />
+            <rect id="visDenSBase" x="80" y="92" width="58" height="58" fill="#475569" opacity="0.5" />
+            <rect id="visDenS" x="80" y="92" width="58" height="58" fill="url(#hatchS)" stroke="#22d3ee" stroke-width="1.4" filter="url(#glowCyan)" />
+            <text id="visPlus" x="168" y="121" fill="#f8fafc" font-size="24" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central">+</text>
+            <rect id="visDenSbarBase" x="190" y="142" width="160" height="8" fill="#334155" opacity="0.3" />
+            <rect id="visDenSbar" x="190" y="142" width="160" height="8" fill="url(#hatchSbar)" stroke="#fb923c" stroke-width="1.4" filter="url(#glowOrange)" />
+          </svg>
+        </div>
         </div>
 
         <div class="steps-list">
           <div class="step-item">
-            <span>Prior \(P(A)\):</span>
-            <span id="calcP_A" style="font-family:monospace;">90.0%</span>
-          </div>
-          <div class="step-item">
-            <span>True Positive Rate \(P(F \cap \bar{A})\):</span>
-            <span id="calcJoint_Abar" style="font-family:monospace; color:#38bdf8;">0.100%</span>
-          </div>
-          <div class="step-item">
-            <span>False Positive Rate \(P(F \cap A)\):</span>
-            <span id="calcJoint_A" style="font-family:monospace; color:#94a3b8;">0.009%</span>
-          </div>
-          <div class="step-item">
-            <span>Total Evidence \(P(F)\):</span>
+            <span id="labelPF">Probability \(P(F)\):</span>
             <span id="calcP_F" style="font-family:monospace;">0.109%</span>
           </div>
         </div>
 
         <div class="result-box">
-          <div class="result-title">Posterior \(P(\bar{A}\vert{}F)\):</div>
+          <div class="result-title" id="labelPosterior">Posterior \(P(S\vert{}F)\):</div>
           <div class="result-value" id="calcPosterior">91.74%</div>
         </div>
       </div>
@@ -519,56 +587,226 @@
 </div>
 
 <script>
-  // App State variables
   const state = {
-    pAbar: 0.10,        // P(A_bar) = 10%
-    pF_Abar: 0.01,      // P(F|A_bar) = 1% (10^-2)
-    pF_A: 0.0001,       // P(F|A) = 0.01% (10^-4)
-    scaleMode: 'linear' // 'linear' or 'log'
+    pS: 0.10,
+    pF_S: 0.01,
+    pF_Sbar: 0.0001,
+    independent: false,
+    nameS: 'S',
+    nameF: 'F'
   };
 
-  // SVG Dimension Constants
-  const SVG_MARGIN = 50;
+  const SVG_LEFT = 90;
+  const SVG_TOP = 50;
   const SVG_SIZE = 400;
 
-  // DOM Elements
   const svg = document.getElementById('bayesSvg');
-  const rectAbar = document.getElementById('rectAbar');
-  const rectA = document.getElementById('rectA');
-  const rectF_Abar = document.getElementById('rectF_Abar');
-  const rectF_A = document.getElementById('rectF_A');
+  const rectS = document.getElementById('rectS');
+  const rectSbar = document.getElementById('rectSbar');
+  const rectF_S = document.getElementById('rectF_S');
+  const rectF_Sbar = document.getElementById('rectF_Sbar');
 
   const lineV = document.getElementById('lineV');
-  const lineH_Abar = document.getElementById('lineH_Abar');
-  const lineH_A = document.getElementById('lineH_A');
+  const hitV = document.getElementById('hitV');
 
-  const arrowAbar = document.getElementById('arrowAbar');
-  const arrowA = document.getElementById('arrowA');
-  const labelP_Abar = document.getElementById('labelP_Abar');
-  const labelP_A = document.getElementById('labelP_A');
+  const lineH_S = document.getElementById('lineH_S');
+  const hitH_S = document.getElementById('hitH_S');
 
-  const arrowF_Abar = document.getElementById('arrowF_Abar');
-  const labelF_Abar = document.getElementById('labelF_Abar');
-  const arrowF_A = document.getElementById('arrowF_A');
-  const labelF_A = document.getElementById('labelF_A');
+  const lineH_Sbar = document.getElementById('lineH_Sbar');
+  const hitH_Sbar = document.getElementById('hitH_Sbar');
 
-  // Input & Control Elements
-  const sliderP_Abar = document.getElementById('sliderP_Abar');
-  const sliderF_Abar = document.getElementById('sliderF_Abar');
-  const sliderF_A = document.getElementById('sliderF_A');
+  const arrowS = document.getElementById('arrowS');
+  const arrowSbar = document.getElementById('arrowSbar');
+  const labelP_S = document.getElementById('labelP_S');
+  const labelP_Sbar = document.getElementById('labelP_Sbar');
+  const overlineP_Sbar = document.getElementById('overlineP_Sbar');
+  const overlineF_Sbar = document.getElementById('overlineF_Sbar');
 
-  const inputP_Abar = document.getElementById('inputP_Abar');
-  const inputF_Abar = document.getElementById('inputF_Abar');
-  const inputF_A = document.getElementById('inputF_A');
+  const arrowF_S = document.getElementById('arrowF_S');
+  const labelF_S = document.getElementById('labelF_S');
+  const arrowF_Sbar = document.getElementById('arrowF_Sbar');
+  const labelF_Sbar = document.getElementById('labelF_Sbar');
 
-  // Calculation Display Elements
-  const calcP_A = document.getElementById('calcP_A');
-  const calcJoint_Abar = document.getElementById('calcJoint_Abar');
-  const calcJoint_A = document.getElementById('calcJoint_A');
+  const sliderP_S = document.getElementById('sliderP_S');
+  const sliderF_S = document.getElementById('sliderF_S');
+  const sliderF_Sbar = document.getElementById('sliderF_Sbar');
+
+  const inputP_S = document.getElementById('inputP_S');
+  const inputF_S = document.getElementById('inputF_S');
+  const inputF_Sbar = document.getElementById('inputF_Sbar');
+  const inputNameS = document.getElementById('inputNameS');
+  const inputNameF = document.getElementById('inputNameF');
+
+  const formulaLine = document.getElementById('formulaLine');
+  const labelPrior = document.getElementById('labelPrior');
+  const labelLikelihood = document.getElementById('labelLikelihood');
+  const labelLikelihoodBar = document.getElementById('labelLikelihoodBar');
+  const labelPF = document.getElementById('labelPF');
+  const labelPosterior = document.getElementById('labelPosterior');
+  const btnIndependent = document.getElementById('btnIndependent');
+
   const calcP_F = document.getElementById('calcP_F');
   const calcPosterior = document.getElementById('calcPosterior');
 
-  // Formatting helpers
+  const visEq = document.getElementById('visEq');
+  const visBar = document.getElementById('visBar');
+  const visNumBase = document.getElementById('visNumBase');
+  const visNum = document.getElementById('visNum');
+  const visDenSBase = document.getElementById('visDenSBase');
+  const visDenS = document.getElementById('visDenS');
+  const visPlus = document.getElementById('visPlus');
+  const visDenSbarBase = document.getElementById('visDenSbarBase');
+  const visDenSbar = document.getElementById('visDenSbar');
+
+  function cleanEventName(raw) {
+    return String(raw)
+      .replace(/[\\${}&%#^_~<>]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 16);
+  }
+
+  function texToken(name) {
+    if (/^[A-Za-z]$/.test(name)) return name;
+    const escaped = name.replace(/([&%$#_{}])/g, '\\$1');
+    return '\\text{' + escaped + '}';
+  }
+
+  function texComplement(name) {
+    if (/^[A-Za-z]$/.test(name)) return '\\bar{' + name + '}';
+    return '\\overline{' + texToken(name) + '}';
+  }
+
+  function fillText(el, segments) {
+    while (el.firstChild) el.removeChild(el.firstChild);
+    segments.forEach((seg) => {
+        if (seg.bar) {
+        const span = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+        span.setAttribute('data-bar', '1');
+        span.textContent = seg.text;
+        el.appendChild(span);
+      } else {
+        el.appendChild(document.createTextNode(seg.text));
+      }
+    });
+  }
+
+  function placeSegmentLabel(el, x1, x2, side) {
+    el.setAttribute('font-size', '13');
+    const textW = el.getComputedTextLength();
+    const segW = x2 - x1;
+    if (textW <= segW - 12) {
+      el.setAttribute('text-anchor', 'middle');
+      el.setAttribute('x', (x1 + x2) / 2);
+      return;
+    }
+    if (side === 'left') {
+      el.setAttribute('text-anchor', 'end');
+      el.setAttribute('x', x2 - 4);
+      return;
+    }
+    el.setAttribute('text-anchor', 'start');
+    el.setAttribute('x', x1 + 4);
+  }
+
+  function labelExtent(el) {
+    const width = el.getComputedTextLength();
+    const x = parseFloat(el.getAttribute('x')) || 0;
+    const anchor = el.getAttribute('text-anchor');
+    if (anchor === 'middle') return { left: x - width / 2, right: x + width / 2 };
+    if (anchor === 'end') return { left: x - width, right: x };
+    return { left: x, right: x + width };
+  }
+
+  function placeArrow(line, x1, x2) {
+    const pad = 6;
+    if (x2 - x1 < pad * 2 + 8) {
+      line.setAttribute('opacity', '0');
+      return;
+    }
+    line.setAttribute('opacity', '1');
+    line.setAttribute('x1', x1 + pad);
+    line.setAttribute('x2', x2 - pad);
+    line.setAttribute('y1', 30);
+    line.setAttribute('y2', 30);
+  }
+
+  function placeOverline(line, textEl) {
+    const span = textEl.querySelector('[data-bar]');
+    if (!span || !span.textContent) {
+      line.setAttribute('opacity', '0');
+      return;
+    }
+    const start = span.getStartPositionOfChar(0);
+    const end = span.getEndPositionOfChar(span.getNumberOfChars() - 1);
+    const y = start.y - 11;
+    line.setAttribute('x1', start.x + 0.4);
+    line.setAttribute('x2', end.x - 0.4);
+    line.setAttribute('y1', y);
+    line.setAttribute('y2', y);
+    line.setAttribute('opacity', '1');
+  }
+
+  let mathQueue = Promise.resolve();
+
+  function queueTypeset(nodes) {
+    const run = () => {
+      if (!window.MathJax || !MathJax.typesetPromise) return;
+      MathJax.typesetClear(nodes);
+      return MathJax.typesetPromise(nodes);
+    };
+    mathQueue = mathQueue.then(() => {
+      if (window.MathJax && MathJax.startup && MathJax.startup.promise) {
+        return MathJax.startup.promise.then(run);
+      }
+      return run();
+    }).catch(() => {});
+  }
+
+  function updateMathLabels() {
+    const S = texToken(state.nameS);
+    const F = texToken(state.nameF);
+    const Sbar = texComplement(state.nameS);
+    formulaLine.innerHTML =
+      '\\[P(' + S + '\\vert{}' + F + ')' +
+      ' = \\frac{P(' + S + ' \\cap ' + F + ')}{P(' + F + ')}' +
+      ' = \\frac{P(' + F + '\\vert{}' + S + ') \\cdot P(' + S + ')}' +
+      '{P(' + F + '\\vert{}' + S + ') \\cdot P(' + S + ')' +
+      ' + P(' + F + '\\vert{}' + Sbar + ') \\cdot P(' + Sbar + ')}\\]';
+    labelPrior.innerHTML = 'Prior \\(P(' + S + ')\\):';
+    labelLikelihood.innerHTML = 'Likelihood \\(P(' + F + '\\vert{}' + S + ')\\):';
+    labelLikelihoodBar.innerHTML = 'Likelihood \\(P(' + F + '\\vert{}' + Sbar + ')\\):';
+    labelPF.innerHTML = 'Probability \\(P(' + F + ')\\):';
+    labelPosterior.innerHTML = 'Posterior \\(P(' + S + '\\vert{}' + F + ')\\):';
+    btnIndependent.textContent = state.nameF + ', ' + state.nameS + ' independent';
+    queueTypeset([formulaLine, labelPrior, labelLikelihood, labelLikelihoodBar, labelPF, labelPosterior]);
+  }
+
+  function setEventName(input, key, fallback) {
+    const cleaned = cleanEventName(input.value);
+    if (!cleaned) return;
+    if (cleaned === state[key]) return;
+    state[key] = cleaned;
+    updateUI();
+    updateMathLabels();
+  }
+
+  function commitEventName(input, key, fallback) {
+    const cleaned = cleanEventName(input.value) || fallback;
+    input.value = cleaned;
+    if (cleaned === state[key]) return;
+    state[key] = cleaned;
+    updateUI();
+    updateMathLabels();
+  }
+
+  function formatFormattedValue(val) {
+    if (val >= 0.01) {
+      return (val).toFixed(val >= 0.1 ? 2 : 3);
+    }
+    return val.toExponential(2).replace('e-', 'e-');
+  }
+
   function formatPercent(val) {
     if (val < 0.0001) return (val * 100).toExponential(2) + '%';
     if (val < 0.01) return (val * 100).toFixed(3) + '%';
@@ -576,203 +814,316 @@
     return (val * 100).toFixed(1) + '%';
   }
 
-  function formatScientific(val) {
-    if (val === 0) return '0';
-    const exp = Math.floor(Math.log10(val));
-    if (exp <= -2) {
-      return `10<sup>${exp}</sup>`;
-    }
-    return (val * 100).toFixed(1) + '%';
-  }
-
-  // Visual scaling transformation helper
   function valueToHeight(val) {
-    if (state.scaleMode === 'linear') {
-      return val * SVG_SIZE;
-    } else {
-      // Logarithmic / Magnified visual scaling for tiny probabilities
-      if (val <= 0) return 0;
-      const minLog = -5; // 10^-5
-      const logVal = Math.max(minLog, Math.log10(val));
-      const norm = (logVal - minLog) / (-minLog); // 0 to 1
-      return Math.max(4, norm * SVG_SIZE);
-    }
+    return val * SVG_SIZE;
   }
 
   function heightToValue(height) {
-    const norm = height / SVG_SIZE;
-    if (state.scaleMode === 'linear') {
-      return norm;
-    } else {
-      const minLog = -5;
-      const logVal = minLog + norm * (-minLog);
-      return Math.pow(10, logVal);
-    }
+    return Math.max(0, Math.min(1, height / SVG_SIZE));
   }
 
-  // Synchronize UI Controls with State
+  function placeRect(base, hatch, x, y, w, h) {
+    [base, hatch].forEach((rect) => {
+      rect.setAttribute('x', x);
+      rect.setAttribute('y', y);
+      rect.setAttribute('width', Math.max(0, w));
+      rect.setAttribute('height', Math.max(0, h));
+    });
+  }
+
+  function updateVisualFraction() {
+    const plotW = SVG_SIZE;
+    const wS = Math.max(state.pS, 0) * plotW;
+    const wSbar = Math.max(1 - state.pS, 0) * plotW;
+    const hS = valueToHeight(state.pF_S);
+    const hSbar = valueToHeight(state.pF_Sbar);
+
+    const VB_W = 520;
+    const plusGap = 22;
+    const eqZone = 32;
+    const sidePad = 8;
+    const maxRowW = VB_W - eqZone - sidePad * 2 - plusGap;
+    const scale = maxRowW / Math.max(wS + wSbar, 1);
+
+    let sW = wS * scale;
+    let sH = hS * scale;
+    let bW = wSbar * scale;
+    let bH = hSbar * scale;
+
+    const minPx = 2;
+    if (state.pS > 0) sW = Math.max(minPx, sW);
+    if (state.pF_S > 0) sH = Math.max(minPx, sH);
+    if (state.pS < 1) bW = Math.max(minPx, bW);
+    if (state.pF_Sbar > 0) bH = Math.max(minPx, bH);
+
+    const widthBudget = VB_W - eqZone - sidePad * 2 - plusGap;
+    if (sW + bW > widthBudget) {
+      const fit = widthBudget / (sW + bW);
+      sW *= fit;
+      bW *= fit;
+    }
+
+    const contentW = sW + plusGap + bW;
+    const originX = Math.max(sidePad, (VB_W - (eqZone + contentW)) / 2);
+    const denX = originX + eqZone;
+    const midGap = 8;
+    const lineY = Math.max(18, 6 + sH + midGap);
+    const denH = Math.max(sH, bH);
+    const denBottom = lineY + midGap + denH;
+    const totalH = denBottom + 8;
+
+    const visualFraction = document.getElementById('visualFraction');
+    visualFraction.setAttribute('viewBox', `0 0 ${VB_W} ${totalH}`);
+    visualFraction.setAttribute(
+      'aria-label',
+      `Posterior as the joint area of ${state.nameS} and ${state.nameF} over the total area of ${state.nameF}`
+    );
+
+    visEq.setAttribute('x', denX - 16);
+    visEq.setAttribute('y', lineY);
+    visBar.setAttribute('x1', denX - 6);
+    visBar.setAttribute('x2', denX + contentW + 6);
+    visBar.setAttribute('y1', lineY);
+    visBar.setAttribute('y2', lineY);
+
+    placeRect(visNumBase, visNum, denX + contentW / 2 - sW / 2, lineY - midGap - sH, sW, sH);
+    placeRect(visDenSBase, visDenS, denX, denBottom - sH, sW, sH);
+    visPlus.setAttribute('x', denX + sW + plusGap / 2);
+    visPlus.setAttribute('y', lineY + midGap + denH / 2);
+    placeRect(visDenSbarBase, visDenSbar, denX + sW + plusGap, denBottom - bH, bW, bH);
+  }
+
   function updateUI() {
-    // 1. Update sliders if not active
-    if (document.activeElement !== sliderP_Abar) sliderP_Abar.value = state.pAbar * 100;
-    if (document.activeElement !== sliderF_Abar) sliderF_Abar.value = state.pF_Abar * 100;
-    if (document.activeElement !== sliderF_A) sliderF_A.value = state.pF_A * 100;
+    lineH_S.classList.toggle('locked', state.independent);
+    lineH_Sbar.classList.toggle('locked', state.independent);
 
-    // 2. Update editable number input boxes if user is not currently typing in them
-    if (document.activeElement !== inputP_Abar) {
-      inputP_Abar.value = (state.pAbar * 100).toFixed(state.pAbar < 0.001 ? 3 : 1);
+    if (document.activeElement !== sliderP_S) sliderP_S.value = state.pS * 100;
+    if (document.activeElement !== sliderF_S) sliderF_S.value = state.pF_S * 100;
+    if (document.activeElement !== sliderF_Sbar) sliderF_Sbar.value = state.pF_Sbar * 100;
+
+    if (document.activeElement !== inputP_S) {
+      inputP_S.value = (state.pS * 100).toFixed(state.pS < 0.001 ? 3 : 1);
     }
-    if (document.activeElement !== inputF_Abar) {
-      inputF_Abar.value = (state.pF_Abar * 100).toFixed(state.pF_Abar < 0.001 ? 4 : 2);
+    if (document.activeElement !== inputF_S) {
+      inputF_S.value = (state.pF_S * 100).toFixed(state.pF_S < 0.001 ? 4 : 2);
     }
-    if (document.activeElement !== inputF_A) {
-      inputF_A.value = (state.pF_A * 100).toFixed(state.pF_A < 0.001 ? 4 : 3);
+    if (document.activeElement !== inputF_Sbar) {
+      inputF_Sbar.value = (state.pF_Sbar * 100).toFixed(state.pF_Sbar < 0.001 ? 4 : 2);
     }
 
-    // 3. Render SVG visual geometry
-    const splitX = SVG_MARGIN + (state.pAbar * SVG_SIZE);
+    const splitX = SVG_LEFT + (state.pS * SVG_SIZE);
 
-    // Geometry - Rectangles
-    rectAbar.setAttribute('width', Math.max(0, splitX - SVG_MARGIN));
-    rectA.setAttribute('x', splitX);
-    rectA.setAttribute('width', Math.max(0, SVG_MARGIN + SVG_SIZE - splitX));
+    rectS.setAttribute('width', Math.max(0, splitX - SVG_LEFT));
+    rectSbar.setAttribute('x', splitX);
+    rectSbar.setAttribute('width', Math.max(0, SVG_LEFT + SVG_SIZE - splitX));
 
-    // Vertical line
     lineV.setAttribute('x1', splitX);
     lineV.setAttribute('x2', splitX);
+    hitV.setAttribute('x1', splitX);
+    hitV.setAttribute('x2', splitX);
 
-    // Top Horizontal Arrows & Labels
-    arrowAbar.setAttribute('x2', Math.max(SVG_MARGIN + 5, splitX - 2));
-    arrowA.setAttribute('x1', splitX);
-    
-    labelP_Abar.setAttribute('x', (SVG_MARGIN + splitX) / 2);
-    labelP_A.setAttribute('x', (splitX + SVG_MARGIN + SVG_SIZE) / 2);
+    placeArrow(arrowS, SVG_LEFT, splitX);
+    placeArrow(arrowSbar, splitX, SVG_LEFT + SVG_SIZE);
 
-    labelP_Abar.textContent = `P(Ā)=${(state.pAbar * 100).toFixed(0)}%`;
-    labelP_A.textContent = `P(A)=${((1 - state.pAbar) * 100).toFixed(0)}%`;
+    const priorPct = (state.pS * 100).toFixed(0);
+    const priorBarPct = ((1 - state.pS) * 100).toFixed(0);
+    fillText(labelP_S, [
+      { text: `P(${state.nameS}) = ${priorPct}%` }
+    ]);
+    fillText(labelP_Sbar, [
+      { text: 'P(' },
+      { text: state.nameS, bar: true },
+      { text: `) = ${priorBarPct}%` }
+    ]);
+    placeSegmentLabel(labelP_S, SVG_LEFT, splitX, 'left');
+    placeSegmentLabel(labelP_Sbar, splitX, SVG_LEFT + SVG_SIZE, 'right');
+    placeOverline(overlineP_Sbar, labelP_Sbar);
 
-    // Likelihood Heights
-    const hF_Abar = valueToHeight(state.pF_Abar);
-    const yF_Abar = (SVG_MARGIN + SVG_SIZE) - hF_Abar;
+    // Likelihood P(F|S)
+    const hF_S = valueToHeight(state.pF_S);
+    const yF_S = (SVG_TOP + SVG_SIZE) - hF_S;
 
-    rectF_Abar.setAttribute('x', SVG_MARGIN);
-    rectF_Abar.setAttribute('width', Math.max(0, splitX - SVG_MARGIN));
-    rectF_Abar.setAttribute('y', yF_Abar);
-    rectF_Abar.setAttribute('height', hF_Abar);
+    rectF_S.setAttribute('x', SVG_LEFT);
+    rectF_S.setAttribute('width', Math.max(0, splitX - SVG_LEFT));
+    rectF_S.setAttribute('y', yF_S);
+    rectF_S.setAttribute('height', hF_S);
 
-    lineH_Abar.setAttribute('x1', SVG_MARGIN);
-    lineH_Abar.setAttribute('x2', splitX);
-    lineH_Abar.setAttribute('y1', yF_Abar);
-    lineH_Abar.setAttribute('y2', yF_Abar);
+    lineH_S.setAttribute('x1', SVG_LEFT);
+    lineH_S.setAttribute('x2', splitX);
+    lineH_S.setAttribute('y1', yF_S);
+    lineH_S.setAttribute('y2', yF_S);
 
-    // Arrow F|Abar
-    const midAbarX = (SVG_MARGIN + splitX) / 2;
-    arrowF_Abar.setAttribute('x1', midAbarX);
-    arrowF_Abar.setAttribute('x2', midAbarX);
-    arrowF_Abar.setAttribute('y1', SVG_MARGIN + SVG_SIZE);
-    arrowF_Abar.setAttribute('y2', Math.min(SVG_MARGIN + SVG_SIZE - 5, yF_Abar + 2));
+    hitH_S.setAttribute('x1', SVG_LEFT);
+    hitH_S.setAttribute('x2', splitX);
+    hitH_S.setAttribute('y1', yF_S);
+    hitH_S.setAttribute('y2', yF_S);
 
-    labelF_Abar.textContent = `P(F|Ā) = ${formatScientific(state.pF_Abar)}`;
+    const midSX = (SVG_LEFT + splitX) / 2;
+    arrowF_S.setAttribute('x1', midSX);
+    arrowF_S.setAttribute('x2', midSX);
+    arrowF_S.setAttribute('y1', SVG_TOP + SVG_SIZE);
+    arrowF_S.setAttribute('y2', yF_S);
 
-    // Likelihood F|A
-    const hF_A = valueToHeight(state.pF_A);
-    const yF_A = (SVG_MARGIN + SVG_SIZE) - hF_A;
+    labelF_S.setAttribute('x', SVG_LEFT - 12);
+    labelF_S.setAttribute('y', Math.max(SVG_TOP + 12, Math.min(SVG_TOP + SVG_SIZE - 5, yF_S + 4)));
+    labelF_S.setAttribute('font-size', '12');
+    fillText(labelF_S, [
+      { text: `P(${state.nameF}|${state.nameS}) = ${formatFormattedValue(state.pF_S)}` }
+    ]);
 
-    rectF_A.setAttribute('x', splitX);
-    rectF_A.setAttribute('width', Math.max(0, SVG_MARGIN + SVG_SIZE - splitX));
-    rectF_A.setAttribute('y', yF_A);
-    rectF_A.setAttribute('height', hF_A);
+    // Likelihood P(F|\bar{S})
+    const hF_Sbar = valueToHeight(state.pF_Sbar);
+    const yF_Sbar = (SVG_TOP + SVG_SIZE) - hF_Sbar;
 
-    lineH_A.setAttribute('x1', splitX);
-    lineH_A.setAttribute('x2', SVG_MARGIN + SVG_SIZE);
-    lineH_A.setAttribute('y1', yF_A);
-    lineH_A.setAttribute('y2', yF_A);
+    rectF_Sbar.setAttribute('x', splitX);
+    rectF_Sbar.setAttribute('width', Math.max(0, SVG_LEFT + SVG_SIZE - splitX));
+    rectF_Sbar.setAttribute('y', yF_Sbar);
+    rectF_Sbar.setAttribute('height', hF_Sbar);
 
-    // Arrow F|A
-    const midAX = (splitX + SVG_MARGIN + SVG_SIZE) / 2;
-    arrowF_A.setAttribute('x1', midAX);
-    arrowF_A.setAttribute('x2', midAX);
-    arrowF_A.setAttribute('y1', SVG_MARGIN + SVG_SIZE);
-    arrowF_A.setAttribute('y2', Math.min(SVG_MARGIN + SVG_SIZE - 2, yF_A + 1));
+    lineH_Sbar.setAttribute('x1', splitX);
+    lineH_Sbar.setAttribute('x2', SVG_LEFT + SVG_SIZE);
+    lineH_Sbar.setAttribute('y1', yF_Sbar);
+    lineH_Sbar.setAttribute('y2', yF_Sbar);
 
-    labelF_A.textContent = `P(F|A) = ${formatScientific(state.pF_A)}`;
+    hitH_Sbar.setAttribute('x1', splitX);
+    hitH_Sbar.setAttribute('x2', SVG_LEFT + SVG_SIZE);
+    hitH_Sbar.setAttribute('y1', yF_Sbar);
+    hitH_Sbar.setAttribute('y2', yF_Sbar);
 
-    // 4. Mathematical Calculations
-    const pA = 1 - state.pAbar;
-    const joint_Abar = state.pF_Abar * state.pAbar;
-    const joint_A = state.pF_A * pA;
-    const pF = joint_Abar + joint_A;
-    const posterior = pF > 0 ? (joint_Abar / pF) : 0;
+    const midSbarX = (splitX + SVG_LEFT + SVG_SIZE) / 2;
+    arrowF_Sbar.setAttribute('x1', midSbarX);
+    arrowF_Sbar.setAttribute('x2', midSbarX);
+    arrowF_Sbar.setAttribute('y1', SVG_TOP + SVG_SIZE);
+    arrowF_Sbar.setAttribute('y2', yF_Sbar);
 
-    calcP_A.textContent = formatPercent(pA);
-    calcJoint_Abar.textContent = formatPercent(joint_Abar);
-    calcJoint_A.textContent = formatPercent(joint_A);
+    labelF_Sbar.setAttribute('x', SVG_LEFT + SVG_SIZE + 10);
+    labelF_Sbar.setAttribute('y', Math.max(SVG_TOP + 12, Math.min(SVG_TOP + SVG_SIZE - 5, yF_Sbar + 4)));
+    labelF_Sbar.setAttribute('font-size', '12');
+    fillText(labelF_Sbar, [
+      { text: `P(${state.nameF}|` },
+      { text: state.nameS, bar: true },
+      { text: `) = ${formatFormattedValue(state.pF_Sbar)}` }
+    ]);
+    placeOverline(overlineF_Sbar, labelF_Sbar);
+    const priorLeft = labelExtent(labelP_S).left;
+    const priorRight = labelExtent(labelP_Sbar).right;
+    const minX = Math.min(0, priorLeft - 8, SVG_LEFT - 12 - labelF_S.getComputedTextLength() - 8);
+    const maxX = Math.max(540, priorRight + 12, SVG_LEFT + SVG_SIZE + 10 + labelF_Sbar.getComputedTextLength() + 12);
+    svg.setAttribute('viewBox', `${minX} 0 ${maxX - minX} 500`);
+
+    // Calculations
+    const pSbar = 1 - state.pS;
+    const joint_S = state.pF_S * state.pS;
+    const joint_Sbar = state.pF_Sbar * pSbar;
+    const pF = joint_S + joint_Sbar;
+    const posterior = pF > 0 ? (joint_S / pF) : 0;
+
     calcP_F.textContent = formatPercent(pF);
     calcPosterior.textContent = (posterior * 100).toFixed(2) + '%';
+    updateVisualFraction();
   }
 
-  // Direct Number Inputs Event Listeners
-  inputP_Abar.addEventListener('input', (e) => {
+  function priorIsEqual() {
+    return Math.round(state.pS * 100) === 50;
+  }
+
+  function syncScenarioButtons() {
+    const stolen = document.querySelector('.presets-group .btn[data-preset="original"]');
+    const bridge = document.querySelector('.presets-group .btn[data-preset="bridge"]');
+    const equal = document.querySelector('.presets-group .btn[data-preset="balanced"]');
+    if (stolen) stolen.classList.remove('active');
+    if (bridge) bridge.classList.remove('active');
+    if (equal) equal.classList.toggle('active', priorIsEqual());
+  }
+
+  function applyPresetNames(nameS, nameF) {
+    const namesChanged = state.nameS !== nameS || state.nameF !== nameF;
+    state.nameS = nameS;
+    state.nameF = nameF;
+    inputNameS.value = nameS;
+    inputNameF.value = nameF;
+    updateUI();
+    if (namesChanged) updateMathLabels();
+  }
+
+  inputNameS.addEventListener('input', () => setEventName(inputNameS, 'nameS', 'S'));
+  inputNameF.addEventListener('input', () => setEventName(inputNameF, 'nameF', 'F'));
+  inputNameS.addEventListener('blur', () => commitEventName(inputNameS, 'nameS', 'S'));
+  inputNameF.addEventListener('blur', () => commitEventName(inputNameF, 'nameF', 'F'));
+
+  // Number Input Handlers
+  inputP_S.addEventListener('input', (e) => {
     let val = parseFloat(e.target.value) / 100;
     if (!isNaN(val)) {
-      state.pAbar = Math.min(0.9999, Math.max(0.0001, val));
+      state.pS = Math.min(0.9999, Math.max(0.0001, val));
+      syncScenarioButtons();
       updateUI();
     }
   });
 
-  inputF_Abar.addEventListener('input', (e) => {
+  inputF_S.addEventListener('input', (e) => {
     let val = parseFloat(e.target.value) / 100;
     if (!isNaN(val)) {
-      state.pF_Abar = Math.min(1.0, Math.max(0.000001, val));
+      state.pF_S = Math.min(1.0, Math.max(0.000001, val));
+      if (state.independent) state.pF_Sbar = state.pF_S;
+      syncScenarioButtons();
       updateUI();
     }
   });
 
-  inputF_A.addEventListener('input', (e) => {
+  inputF_Sbar.addEventListener('input', (e) => {
     let val = parseFloat(e.target.value) / 100;
     if (!isNaN(val)) {
-      state.pF_A = Math.min(1.0, Math.max(0.000001, val));
+      state.pF_Sbar = Math.min(1.0, Math.max(0.000001, val));
+      if (state.independent) state.pF_S = state.pF_Sbar;
+      syncScenarioButtons();
       updateUI();
     }
   });
 
-  // Slider Event Listeners
-  sliderP_Abar.addEventListener('input', (e) => {
-    state.pAbar = parseFloat(e.target.value) / 100;
+  // Slider Handlers
+  sliderP_S.addEventListener('input', (e) => {
+    state.pS = parseFloat(e.target.value) / 100;
+    syncScenarioButtons();
     updateUI();
   });
 
-  sliderF_Abar.addEventListener('input', (e) => {
-    state.pF_Abar = parseFloat(e.target.value) / 100;
+  sliderF_S.addEventListener('input', (e) => {
+    state.pF_S = parseFloat(e.target.value) / 100;
+    if (state.independent) state.pF_Sbar = state.pF_S;
+    syncScenarioButtons();
     updateUI();
   });
 
-  sliderF_A.addEventListener('input', (e) => {
-    state.pF_A = parseFloat(e.target.value) / 100;
+  sliderF_Sbar.addEventListener('input', (e) => {
+    state.pF_Sbar = parseFloat(e.target.value) / 100;
+    if (state.independent) state.pF_S = state.pF_Sbar;
+    syncScenarioButtons();
     updateUI();
   });
 
-  // Dragging logic for Direct Diagram Dragging
+  // Mouse / Touch Dragging Logic
   let isDragging = null;
 
   function getMouseSVGPos(e) {
     const rect = svg.getBoundingClientRect();
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const viewBox = svg.viewBox.baseVal;
     return {
-      x: ((clientX - rect.left) / rect.width) * 500,
-      y: ((clientY - rect.top) / rect.height) * 500
+      x: viewBox.x + ((clientX - rect.left) / rect.width) * viewBox.width,
+      y: viewBox.y + ((clientY - rect.top) / rect.height) * viewBox.height
     };
   }
 
-  lineV.addEventListener('mousedown', () => isDragging = 'V');
-  lineH_Abar.addEventListener('mousedown', () => isDragging = 'H_Abar');
-  lineH_A.addEventListener('mousedown', () => isDragging = 'H_A');
+  function startDrag(target) {
+    if (target === lineV || target === hitV) isDragging = 'V';
+    if (target === lineH_S || target === hitH_S) isDragging = 'H_S';
+    if (target === lineH_Sbar || target === hitH_Sbar) isDragging = 'H_Sbar';
+  }
 
-  window.addEventListener('touchstart', (e) => {
-    if (e.target === lineV) isDragging = 'V';
-    if (e.target === lineH_Abar) isDragging = 'H_Abar';
-    if (e.target === lineH_A) isDragging = 'H_A';
-  });
+  svg.addEventListener('mousedown', (e) => startDrag(e.target));
+  svg.addEventListener('touchstart', (e) => startDrag(e.target));
 
   window.addEventListener('mousemove', handleDrag);
   window.addEventListener('touchmove', handleDrag);
@@ -785,54 +1136,66 @@
     const pos = getMouseSVGPos(e);
 
     if (isDragging === 'V') {
-      const normX = (pos.x - SVG_MARGIN) / SVG_SIZE;
-      state.pAbar = Math.max(0.001, Math.min(0.999, normX));
-    } else if (isDragging === 'H_Abar') {
-      const h = (SVG_MARGIN + SVG_SIZE) - pos.y;
-      state.pF_Abar = Math.max(0.00001, Math.min(1.0, heightToValue(h)));
-    } else if (isDragging === 'H_A') {
-      const h = (SVG_MARGIN + SVG_SIZE) - pos.y;
-      state.pF_A = Math.max(0.00001, Math.min(1.0, heightToValue(h)));
+      const normX = (pos.x - SVG_LEFT) / SVG_SIZE;
+      state.pS = Math.max(0.001, Math.min(0.999, normX));
+    } else if (isDragging === 'H_S' || isDragging === 'H_Sbar') {
+      const h = (SVG_TOP + SVG_SIZE) - pos.y;
+      const likelihood = Math.max(0.00001, Math.min(1.0, heightToValue(h)));
+      if (state.independent) {
+        state.pF_S = likelihood;
+        state.pF_Sbar = likelihood;
+      } else if (isDragging === 'H_S') {
+        state.pF_S = likelihood;
+      } else {
+        state.pF_Sbar = likelihood;
+      }
     }
 
+    syncScenarioButtons();
     updateUI();
   }
 
-  // Presets Loader
   function loadPreset(type) {
     document.querySelectorAll('.presets-group .btn').forEach(btn => btn.classList.remove('active'));
     event.target.classList.add('active');
+    state.independent = false;
 
     if (type === 'original') {
-      state.pAbar = 0.10;
-      state.pF_Abar = 0.01; // 10^-2
-      state.pF_A = 0.0001;  // 10^-4
-    } else if (type === 'medical') {
-      state.pAbar = 0.01;   // 1% Disease prevalence
-      state.pF_Abar = 0.95; // 95% Sensitivity
-      state.pF_A = 0.05;    // 5% False positive rate
-    } else if (type === 'spam') {
-      state.pAbar = 0.40;   // 40% Spam emails
-      state.pF_Abar = 0.80; // 80% Contains word "Free"
-      state.pF_A = 0.02;    // 2% Non-spam contains word "Free"
+      state.pS = 0.10;
+      state.pF_S = 0.01;
+      state.pF_Sbar = 0.0001;
+      applyPresetNames('S', 'F');
+      return;
+    } else if (type === 'bridge') {
+      state.pS = 0.05;
+      state.pF_S = 0.90;
+      state.pF_Sbar = 0.20;
+      applyPresetNames('P', 'C');
+      return;
     } else if (type === 'balanced') {
-      state.pAbar = 0.50;
-      state.pF_Abar = 0.70;
-      state.pF_A = 0.30;
+      state.pS = 0.50;
+      state.pF_S = 0.70;
+      state.pF_Sbar = 0.30;
     }
 
     updateUI();
   }
 
-  // Scale Mode Toggle
-  function setScaleMode(mode) {
-    state.scaleMode = mode;
-    document.getElementById('scaleLinear').classList.toggle('active', mode === 'linear');
-    document.getElementById('scaleLog').classList.toggle('active', mode === 'log');
+  function makeIndependent() {
+    document.querySelectorAll('.presets-group .btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+
+    const pF = state.pF_S * state.pS + state.pF_Sbar * (1 - state.pS);
+    const likelihood = Math.min(1, Math.max(0.00001, pF));
+    state.pF_S = likelihood;
+    state.pF_Sbar = likelihood;
+    state.independent = true;
+    if (priorIsEqual()) {
+      document.querySelector('.presets-group .btn[data-preset="balanced"]').classList.add('active');
+    }
     updateUI();
   }
 
-  // Initialize
   updateUI();
 </script>
 
