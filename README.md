@@ -46,6 +46,8 @@ However, you’re free to use any programming language or environment you prefer
 
 ### [**<img src="https://colab.research.google.com/img/colab_favicon_256px.png" alt="Colab Logo" width="28" style="vertical-align: middle;"/> Week 1: Introduction to Data Analysis — Solution**](https://colab.research.google.com/github/theresa-hefele/risk-analysis/blob/main/week1/week1_data_analysis_solution.ipynb)
 
+### [**<img src="https://colab.research.google.com/img/colab_favicon_256px.png" alt="Colab Logo" width="28" style="vertical-align: middle;"/> Week 3: Multivariate**](https://colab.research.google.com/github/theresa-hefele/risk-analysis/blob/main/week3/week3_multivariate.ipynb)
+
 
 ## More Material
 
