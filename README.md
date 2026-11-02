@@ -48,6 +48,8 @@ However, you’re free to use any programming language or environment you prefer
 
 ### [**<img src="https://colab.research.google.com/img/colab_favicon_256px.png" alt="Colab Logo" width="28" style="vertical-align: middle;"/> Week 3: Multivariate**](https://colab.research.google.com/github/theresa-hefele/risk-analysis/blob/main/week3/week3_multivariate.ipynb)
 
+### [**<img src="https://colab.research.google.com/img/colab_favicon_256px.png" alt="Colab Logo" width="28" style="vertical-align: middle;"/> Week 3: Multivariate — Solution**](https://colab.research.google.com/github/theresa-hefele/risk-analysis/blob/main/week3/week3_multivariate_solution.ipynb)
+
 
 ## More Material
 
