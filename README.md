@@ -52,10 +52,11 @@ However, you’re free to use any programming language or environment you prefer
 
 ### [**<img src="https://colab.research.google.com/img/colab_favicon_256px.png" alt="Colab Logo" width="28" style="vertical-align: middle;"/> Week 4: Bernoulli - Solution**](https://colab.research.google.com/github/theresa-hefele/risk-analysis/blob/main/week4/week4_bernoulli.ipynb)
 
+### [**<img src="https://colab.research.google.com/img/colab_favicon_256px.png" alt="Colab Logo" width="28" style="vertical-align: middle;"/> Week 5: Poisson**](https://colab.research.google.com/github/theresa-hefele/risk-analysis/blob/main/week5/week5_poisson.ipynb)
+
 
 ## More Material
 
 ### [Interactive Bayes' Theorem Tool](https://theresa-hefele.github.io/risk-analysis/week2/interactive_stolen_anchors.html)
-
 
 
